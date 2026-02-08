@@ -8,7 +8,7 @@ model Specialties{
 
 model DoctorSpecialties{
     specialtiesId String
-    specialities Specialties @relation(fields: [specialtiesId],references: [id])
+    specialties Specialties @relation(fields: [specialtiesId],references: [id])
 
     doctorId String
     doctor Doctor @relation(fields: [doctorId],references: [id])
