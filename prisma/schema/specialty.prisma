@@ -1,18 +1,18 @@
-model Specialties{
-    id String @id @default(uuid())
-    title String
-    icon String
-    doctorSpecialties DoctorSpecialties[]   
-    @@map("specialties")
+model Specialties {
+  id                String              @id @default(uuid())
+  title             String
+  icon              String
+  doctorSpecialties DoctorSpecialties[]
+
+  @@map("specialties")
 }
 
-model DoctorSpecialties{
-    specialtiesId String
-    specialties Specialties @relation(fields: [specialtiesId],references: [id])
+model DoctorSpecialties {
+  specialtiesId String
+  doctorId      String
+  doctor        Doctor      @relation(fields: [doctorId], references: [id])
+  specialties   Specialties @relation(fields: [specialtiesId], references: [id])
 
-    doctorId String
-    doctor Doctor @relation(fields: [doctorId],references: [id])
-
-    @@id([specialtiesId,doctorId])
-    @@map("doctor_specialties")
+  @@id([specialtiesId, doctorId])
+  @@map("doctor_specialties")
 }

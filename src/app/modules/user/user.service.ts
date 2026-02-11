@@ -99,10 +99,11 @@ const getAllFromDB = async (params: any, options: any) => {
 
   const { searchTerm, ...filterData } = params;
 
-  const andCondition: Prisma.UserWhereInput[] = [];
+  const andConditions: Prisma.UserWhereInput[] = [];
 
+  // 🔍 Search
   if (searchTerm) {
-    andCondition.push({
+    andConditions.push({
       OR: userSearchableFields.map((field) => ({
         [field]: {
           contains: searchTerm,
@@ -112,8 +113,9 @@ const getAllFromDB = async (params: any, options: any) => {
     });
   }
 
+  // 🎯 Filters
   if (Object.keys(filterData).length > 0) {
-    andCondition.push({
+    andConditions.push({
       AND: Object.keys(filterData).map((key) => ({
         [key]: {
           equals: (filterData as any)[key],
@@ -122,21 +124,25 @@ const getAllFromDB = async (params: any, options: any) => {
     });
   }
 
+  // ✅ Safe where condition
+  const whereConditions: Prisma.UserWhereInput =
+    andConditions.length > 0 ? { AND: andConditions } : {};
+
   const result = await prisma.user.findMany({
     skip,
     take: limit,
-    where: {
-      AND: andCondition,
-    },
-    orderBy: {
-      [sortBy]: sortOrder,
-    },
+    where: whereConditions,
+    orderBy: sortBy
+      ? {
+          [sortBy]: sortOrder || "asc",
+        }
+      : {
+          createdAt: "desc", // default sorting
+        },
   });
 
   const total = await prisma.user.count({
-    where: {
-      AND: andCondition,
-    },
+    where: whereConditions,
   });
 
   return {
@@ -144,6 +150,7 @@ const getAllFromDB = async (params: any, options: any) => {
     data: result,
   };
 };
+
 
 export const UserService = {
   createPatient,

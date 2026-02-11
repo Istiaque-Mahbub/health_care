@@ -33,7 +33,7 @@ const getAllFromDB = async(filters:any,options:any) =>{
         andConditions.push({
             doctorSpecialties:{
                 some:{
-                    specialities:{
+                    specialties:{
                         title:{
                             contains:specialties,
                             mode:"insensitive"
@@ -66,7 +66,7 @@ const getAllFromDB = async(filters:any,options:any) =>{
         include:{
             doctorSpecialties:{
                 include:{
-                    specialities:true
+                    specialties:true
                 }
             }
         }
@@ -133,7 +133,7 @@ const updateIntoDB = async(id:string,payload:Partial<IDoctorUpdateInput>) =>{
         include:{
             doctorSpecialties:{
                 include:{
-                    specialities:true
+                    specialties:true
                 }
             }
         }
@@ -153,7 +153,7 @@ const getByIdFromDB = async (id: string): Promise<Doctor | null> => {
         include: {
             doctorSpecialties: {
                 include: {
-                    specialities: true,
+                    specialties: true,
                 },
             },
             doctorSchedules: {
@@ -217,7 +217,7 @@ const getAISuggestions = async (payload:{symptoms:string}) => {
     include:{
         doctorSpecialties:{
             include:{
-                specialities:true
+                specialties:true
             }
         }
     }
