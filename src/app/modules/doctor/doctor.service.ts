@@ -68,6 +68,12 @@ const getAllFromDB = async(filters:any,options:any) =>{
                 include:{
                     specialties:true
                 }
+            },
+            reviews:{
+                select:{
+                    rating:true,
+                    comment:true
+                }
             }
         }
     })
@@ -134,6 +140,12 @@ const updateIntoDB = async(id:string,payload:Partial<IDoctorUpdateInput>) =>{
             doctorSpecialties:{
                 include:{
                     specialties:true
+                }
+            },
+            reviews:{
+                select:{
+                    rating:true,
+                    comment:true
                 }
             }
         }
