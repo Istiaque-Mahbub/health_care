@@ -1,4 +1,4 @@
-import { AppointmentStatus, Prisma, UserRole } from "@prisma/client";
+import { AppointmentStatus, PaymentStatus, Prisma, UserRole } from "@prisma/client";
 import { paginationHelper } from "../../helper/paginationHelper";
 import { stripe } from "../../helper/stripe";
 import { prisma } from "../../shared/prisma";
@@ -181,8 +181,131 @@ const updateAppointmentStatus = async(appointmentId:string,status:AppointmentSta
     }
 }
 
+
+const cancelUnpaidAppointments =  async()=>{
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000) 
+
+    const unPaidAppointments =  await prisma.appointment.findMany({
+        where:{
+            createdAt : {
+                lte: thirtyMinutesAgo
+            },
+            paymentStatus: PaymentStatus.UNPAID
+        }
+    })
+
+    const appointmentIdsToCancel = unPaidAppointments.map(appointment => appointment.id);
+
+    await prisma.$transaction(async(tnx) => {
+        await tnx.payment.deleteMany({
+            where:{
+                appointmentId:{
+                    in:appointmentIdsToCancel
+                }
+            }
+        })
+
+        await tnx.appointment.deleteMany ({
+            where:{
+                id:{
+                    in:appointmentIdsToCancel
+                }
+            }
+        })
+
+        for(const unPaidAppointment of unPaidAppointments){
+            await tnx.doctorSchedules.update({
+                where:{
+                    doctorId_scheduleId:{
+                        doctorId:unPaidAppointment.doctorId,
+                        scheduleId:unPaidAppointment.scheduleId
+                    }
+                },
+                data:{
+                    isBooked:false
+                }
+            })
+        }
+        
+    })
+
+}
+
+
+const getAllFromDB = async (
+    filters: any,
+    options: any
+) => {
+    const { limit, page, skip } = paginationHelper.calculatedPagination(options);
+    const { patientEmail, doctorEmail, ...filterData } = filters;
+    const andConditions = [];
+
+    if (patientEmail) {
+        andConditions.push({
+            patient: {
+                email: patientEmail
+            }
+        })
+    }
+    else if (doctorEmail) {
+        andConditions.push({
+            doctor: {
+                email: doctorEmail
+            }
+        })
+    }
+
+    if (Object.keys(filterData).length > 0) {
+        andConditions.push({
+            AND: Object.keys(filterData).map((key) => {
+                return {
+                    [key]: {
+                        equals: (filterData as any)[key]
+                    }
+                };
+            })
+        });
+    }
+
+    // console.dir(andConditions, { depth: Infinity })
+    const whereConditions: Prisma.AppointmentWhereInput =
+        andConditions.length > 0 ? { AND: andConditions } : {};
+
+    const result = await prisma.appointment.findMany({
+        where: whereConditions,
+        skip,
+        take: limit,
+        orderBy:
+            options.sortBy && options.sortOrder
+                ? { [options.sortBy]: options.sortOrder }
+                : {
+                    createdAt: 'desc',
+                },
+        include: {
+            doctor: true,
+            patient: true
+        }
+    });
+    const total = await prisma.appointment.count({
+        where: whereConditions
+    });
+
+    return {
+        meta: {
+            total,
+            page,
+            limit,
+        },
+        data: result,
+    };
+};
+
+
+
 export const AppointmentService = {
     createAppointment,
     getMyAppointment,
-    updateAppointmentStatus
+    updateAppointmentStatus,
+    cancelUnpaidAppointments,
+    getAllFromDB
 };
